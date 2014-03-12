@@ -105,7 +105,14 @@
         var $option = $('<option selected>' + htmlEncode(itemText) + '</option>');
         $option.data('item', item);
         $option.attr('value', itemValue);
-        self.$element.find('option').eq($tag.index()-1).after($option);
+        var index = $tag.index();
+        var options = self.$element.find('option');
+        if( options.length == 0 ) {
+          self.$element.append($option);
+        }
+        else {
+          self.$element.find('option').eq(index).before($option);
+        }
       }
 
       if (!dontPushVal) {
@@ -136,9 +143,8 @@
       }
 
       if (item) {
-        var f = function() { return $(this).data('item') == item; };
-        $('.tag', self.$container).filter(f).remove();
-        $('option', self.$element).filter(f).remove();
+        $('.tag', self.$container).filter(function() { return $(this).data('item') == item; }).remove();
+        $('option', self.$element).filter(function() { return $(this).val() == item; }).remove();
         self.itemsArray.splice($.inArray(item, self.itemsArray), 1);
       }
 
@@ -195,7 +201,7 @@
           })[0].nodeValue = htmlEncode(itemText);
 
           if (self.isSelect) {
-            var option = $('option', self.$element).filter(function() { return $(this).data('item') === item; });
+            var option = $('option', self.$element).filter(function() { return $(this).data('item') == item; });
             option.attr('value', itemValue);
           }
       });
@@ -305,7 +311,7 @@
       }, self));
 
       // Only add existing value as tags when using strings as tags
-      if (self.options.itemValue === defaultOptions.itemValue) {
+      if (self.options.itemValue == defaultOptions.itemValue) {
         if (self.$element[0].tagName === 'INPUT') {
             self.add(self.$element.val());
         } else {
