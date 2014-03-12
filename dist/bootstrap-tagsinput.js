@@ -52,41 +52,33 @@
     add: function(item, dontPushVal) {
       var self = this;
 
-      if (self.options.maxTags && self.itemsArray.length >= self.options.maxTags)
+      if (self.options.maxTags && self.itemsArray.length >= self.options.maxTags) {
         return;
-
-      // Ignore falsey values, except false
-      if (item !== false && !item)
-        return;
-
-      // Throw an error when trying to add an object while the itemValue option was not set
-      if (typeof item === "object" && !self.objectItems)
-        throw("Can't add objects when itemValue option is not set");
-
-      // Ignore strings only containg whitespace
-      if (item.toString().match(/^\s*$/))
-        return;
-
-      // If SELECT but not multiple, remove current tag
-      if (self.isSelect && !self.multiple && self.itemsArray.length > 0)
-        self.remove(self.itemsArray[0]);
-
-      if (typeof item === "string" && this.$element[0].tagName === 'INPUT') {
-        var items = item.split(',');
-        if (items.length > 1) {
-          for (var i = 0; i < items.length; i++) {
-            this.add(items[i], true);
-          }
-
-          if (!dontPushVal)
-            self.pushVal();
-          return;
-        }
       }
 
-      var itemValue = self.options.itemValue(item),
-          itemText = self.options.itemText(item),
-          tagClass = self.options.tagClass(item);
+      // Ignore falsey values, except false
+      if (item !== false && !item) {
+        return;
+      }
+
+      // Throw an error when trying to add an object while the itemValue option was not set
+      if (typeof item === "object" && !self.objectItems) {
+        throw("Can't add objects when itemValue option is not set");
+      }
+
+      // Ignore strings only containg whitespace
+      if (item.toString().match(/^\s*$/)) {
+        return;
+      }
+
+      // If SELECT but not multiple, remove current tag
+      if (self.isSelect && !self.multiple && self.itemsArray.length > 0) {
+        self.remove(self.itemsArray[0]);
+      }
+
+      var itemValue = self.options.itemValue(item);
+      var itemText = self.options.itemText(item);
+      var tagClass = self.options.tagClass(item);
 
       // Ignore items allready added
       var existing = $.grep(self.itemsArray, function(item) { return self.options.itemValue(item) === itemValue; } )[0];
@@ -113,15 +105,17 @@
         var $option = $('<option selected>' + htmlEncode(itemText) + '</option>');
         $option.data('item', item);
         $option.attr('value', itemValue);
-        self.$element.append($option);
+        self.$element.find('option').eq($tag.index()-1).after($option);
       }
 
-      if (!dontPushVal)
+      if (!dontPushVal) {
         self.pushVal();
+      }
 
       // Add class when reached maxTags
-      if (self.options.maxTags === self.itemsArray.length)
+      if (self.options.maxTags === self.itemsArray.length) {
         self.$container.addClass('bootstrap-tagsinput-max');
+      }
 
       self.$element.trigger($.Event('itemAdded', { item: item }));
     },
@@ -134,24 +128,28 @@
       var self = this;
 
       if (self.objectItems) {
-        if (typeof item === "object")
+        if (typeof item === "object") {
           item = $.grep(self.itemsArray, function(other) { return self.options.itemValue(other) ==  self.options.itemValue(item); } )[0];
+        }
         else
           item = $.grep(self.itemsArray, function(other) { return self.options.itemValue(other) ==  item; } )[0];
       }
 
       if (item) {
-        $('.tag', self.$container).filter(function() { return $(this).data('item') === item; }).remove();
-        $('option', self.$element).filter(function() { return $(this).data('item') === item; }).remove();
+        var f = function() { return $(this).data('item') == item; };
+        $('.tag', self.$container).filter(f).remove();
+        $('option', self.$element).filter(f).remove();
         self.itemsArray.splice($.inArray(item, self.itemsArray), 1);
       }
 
-      if (!dontPushVal)
+      if (!dontPushVal) {
         self.pushVal();
+      }
 
       // Remove class when reached maxTags
-      if (self.options.maxTags > self.itemsArray.length)
+      if (self.options.maxTags > self.itemsArray.length) {
         self.$container.removeClass('bootstrap-tagsinput-max');
+      }
 
       self.$element.trigger($.Event('itemRemoved',  { item: item }));
     },
@@ -165,13 +163,15 @@
       $('.tag', self.$container).remove();
       $('option', self.$element).remove();
 
-      while(self.itemsArray.length > 0)
+      while(self.itemsArray.length > 0) {
         self.itemsArray.pop();
+      }
 
       self.pushVal();
 
-      if (self.options.maxTags && !this.isEnabled())
+      if (self.options.maxTags && !this.isEnabled()) {
         this.enable();
+      }
     },
 
     /**
@@ -210,7 +210,7 @@
 
     /**
      * Assembly value by retrieving the value of each item, and set it on the
-     * element. 
+     * element.
      */
     pushVal: function() {
       var self = this,
@@ -237,55 +237,6 @@
       makeOptionItemFunction(self.options, 'itemValue');
       makeOptionItemFunction(self.options, 'itemText');
       makeOptionItemFunction(self.options, 'tagClass');
-
-      // for backwards compatibility, self.options.source is deprecated
-      if (self.options.source)
-        typeahead.source = self.options.source;
-
-      if (typeahead.source && $.fn.typeahead) {
-        makeOptionFunction(typeahead, 'source');
-
-        self.$input.typeahead({
-          source: function (query, process) {
-            function processItems(items) {
-              var texts = [];
-
-              for (var i = 0; i < items.length; i++) {
-                var text = self.options.itemText(items[i]);
-                map[text] = items[i];
-                texts.push(text);
-              }
-              process(texts);
-            }
-
-            this.map = {};
-            var map = this.map,
-                data = typeahead.source(query);
-
-            if ($.isFunction(data.success)) {
-              // support for Angular promises
-              data.success(processItems);
-            } else {
-              // support for functions and jquery promises
-              $.when(data)
-               .then(processItems);
-            }
-          },
-          updater: function (text) {
-            self.add(this.map[text]);
-          },
-          matcher: function (text) {
-            return (text.toLowerCase().indexOf(this.query.trim().toLowerCase()) !== -1);
-          },
-          sorter: function (texts) {
-            return texts.sort();
-          },
-          highlighter: function (text) {
-            var regex = new RegExp( '(' + this.query + ')', 'gi' );
-            return text.replace( regex, "<strong>$1</strong>" );
-          }
-        });
-      }
 
       self.$container.on('click', $.proxy(function(event) {
         self.$input.focus();
@@ -381,7 +332,7 @@
     },
 
     /**
-     * Sets focus on the tagsinput 
+     * Sets focus on the tagsinput
      */
     focus: function() {
       this.$input.focus();
@@ -446,9 +397,9 @@
   };
 
   $.fn.tagsinput.Constructor = TagsInput;
-  
+
   /**
-   * Most options support both a string or number as well as a function as 
+   * Most options support both a string or number as well as a function as
    * option value. This function makes sure that the option with the given
    * key in the given options is wrapped in a function
    */
