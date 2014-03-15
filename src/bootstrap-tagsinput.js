@@ -105,13 +105,16 @@
         var $option = $('<option selected>' + htmlEncode(itemText) + '</option>');
         $option.data('item', item);
         $option.attr('value', itemValue);
-        var index = $tag.index();
+        var index = $tag.index() - 1;
         var options = self.$element.find('option');
         if( options.length == 0 ) {
           self.$element.append($option);
         }
+        else if( index < 0 ) {
+          self.$element.prepend($option);
+        }
         else {
-          self.$element.find('option').eq(index).before($option);
+          self.$element.find('option').eq(index).after($option);
         }
       }
 
